@@ -1,0 +1,146 @@
+curl -XPUT 'localhost:9200/test/test/1?pretty' -H 'Content-Type:application/json' -d'
+{
+  "title": "How to make millions!",
+  "tag": [
+    "opportunity"
+  ],
+  "date": "2014-01-09"
+}'
+
+curl -XPUT 'localhost:9200/test/test/2?pretty' -H 'Content-Type:application/json' -d'
+{
+  "title": "How to make millions!",
+  "tag": [
+    "spam"
+  ],
+  "date": "2014-01-09"
+}'
+
+curl -XPUT 'localhost:9200/test/test/3?pretty' -H 'Content-Type:application/json' -d'
+{
+  "title": "How to make millions!",
+  "tag": [
+    "opportunity",
+    "starred"
+  ],
+  "date": "2013-01-09"
+}'
+
+
+
+curl -XGET 'localhost:9200/test/test/_search?pretty' -d'
+{
+  "query": {
+    "bool": {
+      "must": {
+        "match": {
+          "title": "how to make millions"
+        }
+      },
+      "must_not": {
+        "match": {
+          "tag": "spam"
+        }
+      },
+      "should": [
+        {
+          "match": {
+            "tag": "starred"
+          }
+        },
+        {
+          "range": {
+            "date": {
+              "gte": "2014-01-01"
+            }
+          }
+        }
+      ]
+    }
+  }
+}'
+
+
+curl -XGET 'localhost:9200/test/test/_search?pretty' -d'
+{
+  "query": {
+    "bool": {
+      "must": {
+        "match": {
+          "title": "how to make millions"
+        }
+      },
+      "must_not": {
+        "match": {
+          "tag": "spam"
+        }
+      },
+      "should": [
+        {
+          "match": {
+            "tag": "starred"
+          }
+        }
+      ],
+      "filter": {
+        "range": {
+          "date": {
+            "gte": "2014-01-01"
+          }
+        }
+      }
+    }
+  }
+}'
+
+
+# Embed another bool inside the first bool's filter clause, to
+# enable boolean logic among non-scoring queries
+curl -XGET 'localhost:9200/test/test/_search?pretty' -d'
+{
+  "query": {
+    "bool": {
+      "must": {
+        "match": {
+          "title": "how to make millions"
+        }
+      },
+      "must_not": {
+        "match": {
+          "tag": "spam"
+        }
+      },
+      "should": [
+        {
+          "match": {
+            "tag": "starred"
+          }
+        }
+      ],
+      "filter": {
+        "bool": {
+            "must": [
+                { "range": { "date": { "gte": "2014-01-01" }}},
+                { "range": { "price": { "lte": 29.99 }}}
+            ],
+            "must_not": [
+                { "term": { "category": "ebooks" }}
+            ]
+        }
+      }
+    }
+  }
+}'
+
+# If you just want to apply a filter and nothing else, you can use
+# constant_score query
+curl -XGET 'localhost:9200/test/test/_search?pretty' -d'
+{
+  "query": {
+    "constant_score":   {
+      "filter": {
+          "term": { "category": "ebooks" }
+      }
+    }
+  }
+}'
